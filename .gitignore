@@ -1,0 +1,95 @@
+# ──────────────────────────────────────────────────────────────────────────
+# Node / TypeScript
+# ──────────────────────────────────────────────────────────────────────────
+node_modules/
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# ──────────────────────────────────────────────────────────────────────────
+# Logs (npm, yarn, pnpm, eval-gen run logs)
+# ──────────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# eval-gen / download script logs at repo root
+download.log
+evalgen-*.log
+evalgen-lg-*.log
+eval-*.log
+
+# ──────────────────────────────────────────────────────────────────────────
+# Environment / secrets
+# ──────────────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+local.settings.json
+*.pem
+*.key
+secrets.json
+appsettings.Development.json
+
+# ──────────────────────────────────────────────────────────────────────────
+# Azure Functions / deployment
+# ──────────────────────────────────────────────────────────────────────────
+bin/
+obj/
+.azure/
+.vscode-test/
+*.zip
+
+# ──────────────────────────────────────────────────────────────────────────
+# Connector runtime state (per-connector "state" dirs hold local CSV uploads,
+# crawl checkpoints, etc.) — these are environment-specific.
+# ──────────────────────────────────────────────────────────────────────────
+state/
+**/state/
+
+# ──────────────────────────────────────────────────────────────────────────
+# Downloaded NGO datasets (large, regenerable via download_data.mjs).
+# Uncomment the next line if you want to commit raw data.
+# ──────────────────────────────────────────────────────────────────────────
+data/
+agent-packages/
+plans/
+
+# ──────────────────────────────────────────────────────────────────────────
+# Editor / OS
+# ──────────────────────────────────────────────────────────────────────────
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ──────────────────────────────────────────────────────────────────────────
+# Coverage / test artifacts
+# ──────────────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+
+# ──────────────────────────────────────────────────────────────────────────
+# Misc
+# ──────────────────────────────────────────────────────────────────────────
+*.tmp
+*.bak
+*.orig
+bugs_enhancements.md
+download_data.mjs
+flatten_data.mjs
+run_evalgen_lg.ps1
+run_evalgen.ps1

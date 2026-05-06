@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alerts — Copilot Connector Platform</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;padding:24px}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;border-bottom:1px solid #21262d;padding-bottom:20px}
+.header h1{font-size:24px;font-weight:600;display:flex;align-items:center;gap:10px}
+.header h1 .icon{font-size:28px}
+.header .subtitle{color:#8b949e;font-size:14px;margin-top:4px}
+.header-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.auto-refresh{color:#8b949e;font-size:12px;display:flex;align-items:center;gap:6px}
+.auto-refresh .dot{width:8px;height:8px;border-radius:50%;background:#3fb950;display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.nav-links{display:flex;gap:12px;margin-top:4px}
+.nav-links a{font-size:13px;color:#8b949e;padding:4px 10px;border-radius:6px;border:1px solid #30363d;transition:all .15s}
+.nav-links a:hover{color:#e6edf3;border-color:#8b949e;text-decoration:none;background:#21262d}
+
+/* Summary bar */
+.summary-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
+.stat-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:20px 24px;text-align:center}
+.stat-card .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#8b949e;font-weight:600;margin-bottom:8px}
+.stat-card .stat-value{font-size:32px;font-weight:700;color:#e6edf3}
+.stat-card .stat-value.red{color:#f85149}
+.stat-card .stat-value.yellow{color:#d29922}
+.stat-card .stat-value.blue{color:#58a6ff}
+.stat-card .stat-value.green{color:#3fb950}
+
+/* Alerts list */
+.section-title{font-size:16px;font-weight:600;margin-bottom:16px;color:#e6edf3;display:flex;align-items:center;gap:8px}
+.alert-list{display:flex;flex-direction:column;gap:12px}
+.alert-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:20px 24px;display:flex;align-items:flex-start;gap:16px;transition:border-color .15s}
+.alert-card:hover{border-color:#30363d}
+.alert-card.severity-critical{border-left:4px solid #f85149}
+.alert-card.severity-warning{border-left:4px solid #d29922}
+.alert-card.severity-info{border-left:4px solid #58a6ff}
+
+.alert-icon{font-size:24px;flex-shrink:0;margin-top:2px}
+.alert-body{flex:1;min-width:0}
+.alert-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;flex-wrap:wrap;gap:8px}
+.alert-title{font-size:15px;font-weight:600;color:#e6edf3}
+.alert-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.alert-meta .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-critical{background:#3d1a1a;color:#f85149}
+.badge-warning{background:#3d2e0a;color:#d29922}
+.badge-info{background:#1a2d4a;color:#58a6ff}
+.badge-acknowledged{background:#1a3a2a;color:#3fb950}
+.badge-active{background:#3d1a1a;color:#f85149}
+.alert-message{font-size:13px;color:#8b949e;margin-bottom:8px;line-height:1.5}
+.alert-details{font-size:12px;color:#6e7681;display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.alert-actions{display:flex;gap:8px}
+
+.btn{padding:6px 14px;border-radius:6px;border:1px solid #30363d;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;background:transparent;color:#e6edf3}
+.btn:hover{background:#21262d;border-color:#8b949e}
+.btn-ack{border-color:#d29922;color:#d29922}
+.btn-ack:hover{background:#3d2e0a}
+.btn-resolve{border-color:#3fb950;color:#3fb950}
+.btn-resolve:hover{background:#1a3a2a}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Empty state */
+.empty-state{text-align:center;padding:60px 20px;color:#8b949e}
+.empty-state .empty-icon{font-size:48px;margin-bottom:16px}
+.empty-state .empty-title{font-size:18px;font-weight:600;color:#e6edf3;margin-bottom:8px}
+.empty-state .empty-desc{font-size:14px}
+
+/* Loading */
+.loading{text-align:center;padding:40px;color:#8b949e}
+.loading .spinner{display:inline-block;width:24px;height:24px;border:3px solid #30363d;border-top-color:#58a6ff;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1><span class="icon">🔔</span> Platform Alerts</h1>
+    <div class="subtitle">Active alerts across all connectors and tenants</div>
+  </div>
+  <div class="header-right">
+    <div class="auto-refresh"><span class="dot"></span> Auto-refresh every 15s</div>
+    <div class="nav-links">
+      <a href="/observatory.html">Observatory</a>
+      <a href="/">Home</a>
+    </div>
+  </div>
+</div>
+
+<div class="summary-bar" id="summaryBar">
+  <div class="stat-card"><div class="stat-label">Critical</div><div class="stat-value red" id="criticalCount">—</div></div>
+  <div class="stat-card"><div class="stat-label">Warning</div><div class="stat-value yellow" id="warningCount">—</div></div>
+  <div class="stat-card"><div class="stat-label">Info</div><div class="stat-value blue" id="infoCount">—</div></div>
+  <div class="stat-card"><div class="stat-label">Total Active</div><div class="stat-value" id="totalCount">—</div></div>
+</div>
+
+<div class="section-title">🚨 Active Alerts</div>
+<div id="alertList" class="alert-list">
+  <div class="loading"><div class="spinner"></div><div>Loading alerts...</div></div>
+</div>
+
+<script>
+const API_BASE = '/api/observatory';
+const REFRESH_INTERVAL = 15_000;
+
+const severityIcon = { critical: '🔴', warning: '🟡', info: '🔵' };
+
+function timeAgo(iso) {
+  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const mins = Math.floor(seconds / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+async function fetchAlerts() {
+  try {
+    const res = await fetch(`${API_BASE}/alerts`, {
+      headers: { 'x-user-roles': 'platform-admin', 'x-user-id': 'admin', 'x-tenant-id': 'platform' }
+    });
+    const data = await res.json();
+    return data.alerts || [];
+  } catch (err) {
+    console.error('Failed to fetch alerts:', err);
+    return [];
+  }
+}
+
+async function patchAlert(id, action) {
+  try {
+    await fetch(`${API_BASE}/alerts/${id}/${action}`, {
+      method: 'PATCH',
+      headers: { 'x-user-roles': 'platform-admin', 'x-user-id': 'admin', 'x-tenant-id': 'platform' }
+    });
+    await refreshAlerts();
+  } catch (err) {
+    console.error(`Failed to ${action} alert:`, err);
+  }
+}
+
+function renderAlerts(alerts) {
+  const criticals = alerts.filter(a => a.severity === 'critical');
+  const warnings = alerts.filter(a => a.severity === 'warning');
+  const infos = alerts.filter(a => a.severity === 'info');
+
+  document.getElementById('criticalCount').textContent = criticals.length;
+  document.getElementById('warningCount').textContent = warnings.length;
+  document.getElementById('infoCount').textContent = infos.length;
+  document.getElementById('totalCount').textContent = alerts.length;
+
+  const list = document.getElementById('alertList');
+
+  if (alerts.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✅</div>
+        <div class="empty-title">All Clear</div>
+        <div class="empty-desc">No active alerts. All connectors are operating normally.</div>
+      </div>`;
+    return;
+  }
+
+  // Sort: critical first, then warning, then info; newest first within severity
+  const order = { critical: 0, warning: 1, info: 2 };
+  alerts.sort((a, b) => {
+    const so = (order[a.severity] ?? 3) - (order[b.severity] ?? 3);
+    if (so !== 0) return so;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  list.innerHTML = alerts.map(alert => `
+    <div class="alert-card severity-${alert.severity}">
+      <div class="alert-icon">${severityIcon[alert.severity] || '⚪'}</div>
+      <div class="alert-body">
+        <div class="alert-header">
+          <div class="alert-title">${escapeHtml(alert.type)}</div>
+          <div class="alert-meta">
+            <span class="badge badge-${alert.severity}">${alert.severity}</span>
+            <span class="badge badge-${alert.status}">${alert.status}</span>
+          </div>
+        </div>
+        <div class="alert-message">${escapeHtml(alert.message)}</div>
+        <div class="alert-details">
+          <span>Connector: <strong>${escapeHtml(alert.connectorId)}</strong></span>
+          <span>Tenant: <strong>${escapeHtml(alert.tenantId)}</strong></span>
+          <span>Created: <strong>${timeAgo(alert.createdAt)}</strong></span>
+        </div>
+        <div class="alert-actions">
+          <button class="btn btn-ack" onclick="patchAlert('${alert.id}', 'acknowledge')" ${alert.status === 'acknowledged' ? 'disabled' : ''}>
+            Acknowledge
+          </button>
+          <button class="btn btn-resolve" onclick="patchAlert('${alert.id}', 'resolve')">
+            Resolve
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function refreshAlerts() {
+  const alerts = await fetchAlerts();
+  renderAlerts(alerts);
+}
+
+// Initial load + auto-refresh
+refreshAlerts();
+setInterval(refreshAlerts, REFRESH_INTERVAL);
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copilot Connector Platform</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+
+.hero{text-align:center;margin-bottom:48px}
+.hero .icon{font-size:56px;margin-bottom:16px;display:block}
+.hero h1{font-size:32px;font-weight:700;margin-bottom:8px}
+.hero .subtitle{color:#8b949e;font-size:16px;max-width:520px;margin:0 auto}
+
+.nav-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;max-width:800px;width:100%;margin-bottom:48px}
+.nav-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:28px 24px;text-align:center;transition:border-color .15s,transform .15s;cursor:pointer;display:block}
+.nav-card:hover{border-color:#30363d;transform:translateY(-2px);text-decoration:none}
+.nav-card .nav-icon{font-size:32px;margin-bottom:12px;display:block}
+.nav-card .nav-title{font-size:18px;font-weight:600;color:#e6edf3;margin-bottom:6px}
+.nav-card .nav-desc{font-size:13px;color:#8b949e;line-height:1.5}
+.nav-card.disabled{opacity:.45;cursor:default}
+.nav-card.disabled:hover{border-color:#21262d;transform:none}
+.nav-card.disabled .nav-title::after{content:' (Coming Soon)';font-size:11px;color:#484f58;font-weight:400}
+
+.quick-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;max-width:800px;width:100%;margin-bottom:32px}
+.qs-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:20px;text-align:center}
+.qs-label{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#8b949e;font-weight:600;margin-bottom:8px}
+.qs-value{font-size:28px;font-weight:700;color:#58a6ff}
+.qs-value.green{color:#3fb950}
+.qs-value.red{color:#f85149}
+
+.footer{color:#484f58;font-size:12px;margin-top:auto;padding-top:40px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="icon">🔌</span>
+  <h1>Copilot Connector Platform</h1>
+  <div class="subtitle">Centralized management for Microsoft 365 Copilot connectors — provision, monitor, and manage connectors across tenants.</div>
+</div>
+
+<!-- Quick Stats -->
+<div class="quick-stats">
+  <div class="qs-card">
+    <div class="qs-label">Connectors</div>
+    <div class="qs-value" id="qsTotal">—</div>
+  </div>
+  <div class="qs-card">
+    <div class="qs-label">Online</div>
+    <div class="qs-value green" id="qsOnline">—</div>
+  </div>
+  <div class="qs-card">
+    <div class="qs-label">Offline</div>
+    <div class="qs-value red" id="qsOffline">—</div>
+  </div>
+</div>
+
+<!-- Navigation -->
+<div class="nav-grid">
+  <a href="/observatory.html" class="nav-card">
+    <span class="nav-icon">🔭</span>
+    <div class="nav-title">Observatory</div>
+    <div class="nav-desc">Real-time view of all connectors across tenants. Health, status, and crawl monitoring.</div>
+  </a>
+  <a href="/tenants.html" class="nav-card">
+    <span class="nav-icon">🏢</span>
+    <div class="nav-title">Tenants</div>
+    <div class="nav-desc">Manage customer and partner tenants, connector provisioning, and quotas.</div>
+  </a>
+  <a href="/uploads.html" class="nav-card">
+    <span class="nav-icon">📤</span>
+    <div class="nav-title">Uploads</div>
+    <div class="nav-desc">Upload CSV/JSON data for connector ingestion. Track scan and validation status.</div>
+  </a>
+  <a href="/alerts.html" class="nav-card">
+    <span class="nav-icon">🔔</span>
+    <div class="nav-title">Alerts</div>
+    <div class="nav-desc">Configure alerts for connector failures, health degradations, and quota overages.</div>
+  </a>
+</div>
+
+<div class="footer">Copilot Connector Hosting Platform • Control Plane</div>
+
+<script>
+async function loadQuickStats() {
+  try {
+    const res = await fetch('/api/observatory/connectors');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const all = [
+      ...(data.registered ? data.registered.items : []),
+      ...(data.discovered ? data.discovered.items : []),
+    ];
+
+    let online = 0, offline = 0;
+    for (const c of all) {
+      if (c.status === 'online') online++;
+      else offline++;
+    }
+
+    document.getElementById('qsTotal').textContent = all.length;
+    document.getElementById('qsOnline').textContent = online;
+    document.getElementById('qsOffline').textContent = offline;
+  } catch (e) {
+    // Silently fail — stats just show dashes
+  }
+}
+loadQuickStats();
+</script>
+</body>
+</html>

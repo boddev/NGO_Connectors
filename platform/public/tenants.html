@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tenants — Copilot Connector Platform</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;padding:24px}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Nav breadcrumb */
+.nav-bar{margin-bottom:24px;display:flex;gap:8px;align-items:center;font-size:13px;color:#8b949e}
+.nav-bar a{color:#58a6ff}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;border-bottom:1px solid #21262d;padding-bottom:20px}
+.header h1{font-size:24px;font-weight:600;display:flex;align-items:center;gap:10px}
+.header h1 .icon{font-size:28px}
+.header .subtitle{color:#8b949e;font-size:14px;margin-top:4px}
+
+/* Summary bar */
+.summary-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:32px}
+.stat-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:20px 24px;text-align:center}
+.stat-card .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#8b949e;font-weight:600;margin-bottom:8px}
+.stat-card .stat-value{font-size:28px;font-weight:700;color:#e6edf3}
+.stat-card .stat-value.green{color:#3fb950}
+.stat-card .stat-value.red{color:#f85149}
+.stat-card .stat-value.blue{color:#58a6ff}
+.stat-card .stat-value.yellow{color:#d29922}
+
+/* Buttons */
+.btn{padding:8px 18px;border-radius:6px;border:1px solid #30363d;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+.btn-primary{background:#1f6feb;color:#fff;border-color:#1f6feb}
+.btn-primary:hover{background:#388bfd}
+.btn-outline{background:transparent;color:#e6edf3;border-color:#30363d}
+.btn-outline:hover{background:#21262d;border-color:#8b949e}
+.btn-danger{background:#da3633;color:#fff;border-color:#da3633}
+.btn-danger:hover{background:#f85149}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:5px}
+
+/* Table */
+.table-container{background:#161b22;border:1px solid #21262d;border-radius:10px;overflow:hidden;margin-bottom:32px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:12px 16px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8b949e;border-bottom:1px solid #21262d;background:#161b22;font-weight:600}
+td{padding:12px 16px;border-bottom:1px solid #21262d;font-size:14px}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#1c2128}
+.clickable{cursor:pointer}
+
+/* Badges */
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:lowercase;white-space:nowrap}
+.badge-active{background:#1a3a2a;color:#3fb950}
+.badge-suspended{background:#3d2e0a;color:#d29922}
+.badge-deactivated{background:#3d1a1a;color:#f85149}
+.badge-free{background:#21262d;color:#8b949e}
+.badge-standard{background:#1a2d4a;color:#58a6ff}
+.badge-enterprise{background:#2a1a4a;color:#bc8cff}
+.badge-customer{background:#1a2d4a;color:#58a6ff}
+.badge-partner{background:#2a1a4a;color:#bc8cff}
+.badge-internal{background:#21262d;color:#8b949e}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#161b22;border:1px solid #30363d;border-radius:12px;max-width:640px;width:90%;max-height:90vh;overflow-y:auto;padding:32px}
+.modal h2{font-size:20px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:#8b949e;font-size:20px;cursor:pointer}
+
+/* Forms */
+.form-group{margin-bottom:20px}
+.form-group label{display:block;font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:6px}
+.form-group .hint{font-size:12px;color:#8b949e;margin-bottom:6px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+input[type="text"],input[type="email"],select{width:100%;padding:8px 12px;border-radius:6px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:14px;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:#58a6ff}
+
+/* Detail pane */
+.detail-pane{display:none;background:#161b22;border:1px solid #21262d;border-radius:10px;padding:28px;margin-bottom:32px}
+.detail-pane.active{display:block}
+.detail-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.detail-header h2{font-size:20px;font-weight:600;display:flex;align-items:center;gap:8px}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.detail-field{padding:12px;background:#0d1117;border-radius:8px;border:1px solid #21262d}
+.detail-field .field-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8b949e;font-weight:600;margin-bottom:4px}
+.detail-field .field-value{font-size:14px;color:#e6edf3;font-weight:500}
+
+/* Wizard */
+.wizard-steps{display:flex;gap:4px;margin-bottom:28px;padding:0;list-style:none}
+.wizard-step{flex:1;text-align:center;padding:10px 8px;background:#21262d;font-size:12px;font-weight:600;color:#8b949e;border-radius:6px;transition:all .15s}
+.wizard-step.active{background:#1f6feb;color:#fff}
+.wizard-step.done{background:#1a3a2a;color:#3fb950}
+.wizard-content{min-height:200px}
+.wizard-content .step{display:none}
+.wizard-content .step.active{display:block}
+.wizard-nav{display:flex;justify-content:space-between;margin-top:24px;padding-top:20px;border-top:1px solid #21262d}
+.instructions{background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:16px;margin:12px 0;font-size:13px;line-height:1.7;color:#8b949e}
+.instructions code{background:#21262d;padding:2px 6px;border-radius:4px;font-family:'Cascadia Code','Fira Code',monospace;font-size:12px;color:#e6edf3}
+.instructions a{color:#58a6ff}
+.instructions ol{margin:8px 0 0 20px}
+.instructions li{margin-bottom:4px}
+
+/* Section */
+.section-title{font-size:16px;font-weight:600;margin-bottom:16px;color:#e6edf3;display:flex;align-items:center;gap:8px}
+
+/* Connectors sub-table */
+.sub-table{margin-top:16px}
+.sub-table table{font-size:13px}
+.sub-table th{font-size:10px;padding:8px 12px}
+.sub-table td{padding:8px 12px}
+
+.badge-online{background:#1a3a2a;color:#3fb950}
+.badge-offline{background:#3d1a1a;color:#f85149}
+.badge-provisioning{background:#1a2d4a;color:#58a6ff}
+.badge-error{background:#3d2e0a;color:#d29922}
+
+/* Loading & error states */
+.loading{text-align:center;padding:40px;color:#8b949e;font-size:14px}
+.loading .spinner{display:inline-block;width:24px;height:24px;border:3px solid #21262d;border-top-color:#58a6ff;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-banner{background:#3d1a1a;border:1px solid #f85149;border-radius:8px;padding:16px 20px;margin-bottom:20px;color:#f85149;font-size:14px;display:none}
+.success-banner{background:#1a3a2a;border:1px solid #3fb950;border-radius:8px;padding:16px 20px;margin-bottom:20px;color:#3fb950;font-size:14px;display:none}
+.empty-state{text-align:center;padding:60px 20px;color:#8b949e}
+.empty-state .empty-icon{font-size:48px;margin-bottom:16px;display:block}
+.empty-state p{margin-bottom:16px}
+
+/* Confirm dialog */
+.confirm-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+.confirm-overlay.active{display:flex}
+.confirm-dialog{background:#161b22;border:1px solid #f85149;border-radius:12px;max-width:480px;width:90%;padding:28px}
+.confirm-dialog h3{font-size:18px;font-weight:600;color:#f85149;margin-bottom:12px}
+.confirm-dialog p{color:#8b949e;font-size:14px;line-height:1.6;margin-bottom:20px}
+.confirm-actions{display:flex;gap:12px;justify-content:flex-end}
+
+@media(max-width:768px){
+  .header{flex-direction:column;gap:16px}
+  .summary-bar{grid-template-columns:repeat(2,1fr)}
+  .form-row{grid-template-columns:1fr}
+  .detail-grid{grid-template-columns:1fr}
+  .wizard-steps{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <a href="/">Platform</a>
+  <span>/</span>
+  <span>Tenants</span>
+</div>
+
+<div class="header">
+  <div>
+    <h1><span class="icon">🏢</span> Tenant Management</h1>
+    <div class="subtitle">Manage customer and partner tenants, onboarding, and quotas</div>
+  </div>
+  <div>
+    <button class="btn btn-primary" onclick="openCreateModal()">+ New Tenant</button>
+  </div>
+</div>
+
+<div class="error-banner" id="errorBanner"></div>
+<div class="success-banner" id="successBanner"></div>
+
+<!-- Summary Bar -->
+<div class="summary-bar">
+  <div class="stat-card">
+    <div class="stat-label">Total Tenants</div>
+    <div class="stat-value blue" id="statTotal">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Active</div>
+    <div class="stat-value green" id="statActive">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Suspended</div>
+    <div class="stat-value yellow" id="statSuspended">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Deactivated</div>
+    <div class="stat-value red" id="statDeactivated">—</div>
+  </div>
+</div>
+
+<!-- Detail Pane (shown when a tenant is selected) -->
+<div class="detail-pane" id="detailPane">
+  <div class="detail-header">
+    <h2 id="detailName">—</h2>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="closeDetail()">✕ Close</button>
+      <button class="btn btn-danger btn-sm" id="offboardBtn" onclick="confirmOffboard()">⏻ Deactivate Tenant</button>
+    </div>
+  </div>
+  <div class="detail-grid" id="detailGrid"></div>
+
+  <div class="section-title">Connectors</div>
+  <div class="sub-table" id="detailConnectors">
+    <div class="loading"><div class="spinner"></div><br>Loading connectors…</div>
+  </div>
+</div>
+
+<!-- Tenant List Table -->
+<div class="table-container" id="tenantTableContainer">
+  <div class="loading" id="loadingState"><div class="spinner"></div><br>Loading tenants…</div>
+  <table id="tenantTable" style="display:none">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Plan</th>
+        <th>Connectors</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody id="tenantTableBody"></tbody>
+  </table>
+  <div class="empty-state" id="emptyState" style="display:none">
+    <span class="empty-icon">🏢</span>
+    <p>No tenants yet. Create your first tenant to get started.</p>
+    <button class="btn btn-primary" onclick="openCreateModal()">+ New Tenant</button>
+  </div>
+</div>
+
+<!-- Create Tenant Modal -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <h2>🏢 Create Tenant</h2>
+
+    <!-- Create Form (step 0) -->
+    <div id="createFormContainer">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tenant Name</label>
+          <input type="text" id="fName" placeholder="Contoso Nonprofit">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="fType">
+            <option value="customer">Customer</option>
+            <option value="partner">Partner</option>
+            <option value="internal">Internal</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Plan</label>
+        <select id="fPlan">
+          <option value="free">Free (2 connectors, 50 MB uploads)</option>
+          <option value="standard">Standard (10 connectors, 500 MB uploads)</option>
+          <option value="enterprise">Enterprise (50 connectors, 5 GB uploads)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Admin Contact Email</label>
+          <input type="email" id="fAdminEmail" placeholder="admin@contoso.org">
+        </div>
+        <div class="form-group">
+          <label>Technical Contact Email</label>
+          <input type="email" id="fTechEmail" placeholder="devops@contoso.org">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Entra Tenant ID</label>
+          <div class="hint">The Azure AD / Entra ID tenant GUID</div>
+          <input type="text" id="fTenantId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>Entra Client ID</label>
+          <div class="hint">App registration client ID</div>
+          <input type="text" id="fClientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-outline" onclick="closeCreateModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createTenant()">Create Tenant</button>
+      </div>
+    </div>
+
+    <!-- Onboarding Wizard (shown after creation) -->
+    <div id="wizardContainer" style="display:none">
+      <ul class="wizard-steps">
+        <li class="wizard-step active" data-step="0">1. Register App</li>
+        <li class="wizard-step" data-step="1">2. App Details</li>
+        <li class="wizard-step" data-step="2">3. Credentials</li>
+        <li class="wizard-step" data-step="3">4. Admin Consent</li>
+        <li class="wizard-step" data-step="4">5. First Connector</li>
+      </ul>
+
+      <div class="wizard-content">
+        <!-- Step 1: Register Entra ID App -->
+        <div class="step active" data-step="0">
+          <h3 style="margin-bottom:12px">Register your Entra ID App</h3>
+          <div class="instructions">
+            <p>Register an application in the Microsoft Entra admin center for your organization.</p>
+            <ol>
+              <li>Go to <a href="https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps" target="_blank">Entra ID → App registrations</a></li>
+              <li>Click <strong>New registration</strong></li>
+              <li>Name it something like <code>Copilot Connector – [YourOrg]</code></li>
+              <li>Set <strong>Supported account types</strong> to "Single tenant"</li>
+              <li>Under <strong>API permissions</strong>, add these Microsoft Graph <em>Application</em> permissions:
+                <ul style="margin-top:4px">
+                  <li><code>ExternalConnection.ReadWrite.OwnedBy</code></li>
+                  <li><code>ExternalItem.ReadWrite.OwnedBy</code></li>
+                </ul>
+              </li>
+              <li>Generate a <strong>Client secret</strong> and save it securely</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Step 2: Enter App Details -->
+        <div class="step" data-step="1">
+          <h3 style="margin-bottom:12px">Enter App Details</h3>
+          <div class="instructions">
+            <p>These values were captured when you created the tenant. Verify they are correct in your Entra ID portal:</p>
+          </div>
+          <div class="form-row" style="margin-top:16px">
+            <div class="form-group">
+              <label>Tenant ID</label>
+              <input type="text" id="wTenantId" readonly style="opacity:.7">
+            </div>
+            <div class="form-group">
+              <label>Client ID</label>
+              <input type="text" id="wClientId" readonly style="opacity:.7">
+            </div>
+          </div>
+          <div class="instructions" style="margin-top:8px">
+            <p>✅ These are already saved in the platform. You can update them later from the tenant detail view if needed.</p>
+          </div>
+        </div>
+
+        <!-- Step 3: Store Credentials -->
+        <div class="step" data-step="2">
+          <h3 style="margin-bottom:12px">Store Credentials in Key Vault</h3>
+          <div class="instructions">
+            <p>Store your client secret securely in Azure Key Vault. <strong>Never</strong> commit secrets to source control.</p>
+            <ol>
+              <li>Open your <a href="https://portal.azure.com/#browse/Microsoft.KeyVault%2Fvaults" target="_blank">Azure Key Vault</a></li>
+              <li>Create or select a vault in your subscription</li>
+              <li>Add a new secret named <code>CopilotConnector-ClientSecret</code></li>
+              <li>Paste the client secret value you generated in Step 1</li>
+              <li>Configure your connector's environment to read from this vault:
+                <pre style="margin-top:8px;background:#0d1117;padding:8px;border-radius:4px;font-size:12px;overflow-x:auto"><code>AZURE_KEYVAULT_URI=https://your-vault.vault.azure.net/
+CLIENT_SECRET_NAME=CopilotConnector-ClientSecret</code></pre>
+              </li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Step 4: Grant Admin Consent -->
+        <div class="step" data-step="3">
+          <h3 style="margin-bottom:12px">Grant Admin Consent</h3>
+          <div class="instructions">
+            <p>An Azure AD Global Administrator must grant consent for the Graph API permissions.</p>
+            <ol>
+              <li>Go to <a href="https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps" target="_blank">Entra admin center → App registrations</a></li>
+              <li>Select your registered app</li>
+              <li>Navigate to <strong>API permissions</strong></li>
+              <li>Click <strong>Grant admin consent for [Your Organization]</strong></li>
+              <li>Confirm the consent dialog</li>
+            </ol>
+            <p style="margin-top:12px">After consent, you should see green checkmarks (✅) next to each permission indicating "Granted for [Your Organization]".</p>
+          </div>
+        </div>
+
+        <!-- Step 5: Deploy First Connector -->
+        <div class="step" data-step="4">
+          <h3 style="margin-bottom:12px">Deploy Your First Connector</h3>
+          <div class="instructions">
+            <p>Your tenant is ready! Now deploy a connector to start ingesting content into Microsoft 365 Copilot.</p>
+            <ol>
+              <li>Go to the <a href="/observatory.html">Observatory</a> to see available connectors</li>
+              <li>Register a connector for this tenant via the API:
+                <pre style="margin-top:8px;background:#0d1117;padding:8px;border-radius:4px;font-size:12px;overflow-x:auto"><code>POST /api/tenants/{tenantId}/connectors
+{
+  "connectionId": "my-connector",
+  "displayName": "My First Connector",
+  "hostingType": "azure-functions"
+}</code></pre>
+              </li>
+              <li>Configure the connector environment variables with your Entra app credentials</li>
+              <li>Deploy and trigger the first full crawl</li>
+            </ol>
+          </div>
+          <div style="text-align:center;margin-top:20px">
+            <button class="btn btn-primary" onclick="finishWizard()">✓ Done — Go to Tenant</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-nav" id="wizardNav">
+        <button class="btn btn-outline" id="wizPrev" onclick="wizardPrev()" style="visibility:hidden">← Previous</button>
+        <button class="btn btn-primary" id="wizNext" onclick="wizardNext()">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Offboard Dialog -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-dialog">
+    <h3>⚠ Deactivate Tenant</h3>
+    <p>This will deactivate the tenant <strong id="confirmTenantName"></strong> and set all associated connectors to offline.</p>
+    <p>Data will be retained for a <strong>30-day grace period</strong>. After that, it may be permanently deleted.</p>
+    <p style="color:#f85149;font-weight:600">This action cannot be easily undone.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-outline" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" onclick="executeOffboard()">Deactivate Tenant</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────
+let tenants = [];
+let tenantStats = {};
+let selectedTenant = null;
+let wizardStep = 0;
+let createdTenant = null;
+
+// ── API Helpers ──────────────────────────────────────────────────────────
+async function api(url, opts = {}) {
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
+    ...opts,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || res.statusText);
+  }
+  return res.json();
+}
+
+// ── Load Tenants ─────────────────────────────────────────────────────────
+async function loadTenants() {
+  try {
+    const data = await api('/api/tenants');
+    tenants = data.items || [];
+    renderStats();
+    renderTable();
+
+    // Load connector counts for each tenant in parallel
+    const statsPromises = tenants.map(async (t) => {
+      try {
+        const stats = await api(`/api/tenants/${t.id}/stats`);
+        tenantStats[t.id] = stats;
+      } catch { tenantStats[t.id] = null; }
+    });
+    await Promise.all(statsPromises);
+    renderTable();
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+function renderStats() {
+  const active = tenants.filter(t => t.status === 'active').length;
+  const suspended = tenants.filter(t => t.status === 'suspended').length;
+  const deactivated = tenants.filter(t => t.status === 'deactivated').length;
+  document.getElementById('statTotal').textContent = tenants.length;
+  document.getElementById('statActive').textContent = active;
+  document.getElementById('statSuspended').textContent = suspended;
+  document.getElementById('statDeactivated').textContent = deactivated;
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tenantTableBody');
+  const table = document.getElementById('tenantTable');
+  const loading = document.getElementById('loadingState');
+  const empty = document.getElementById('emptyState');
+
+  loading.style.display = 'none';
+
+  if (tenants.length === 0) {
+    table.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  table.style.display = 'table';
+
+  tbody.innerHTML = tenants.map(t => {
+    const stats = tenantStats[t.id];
+    const connectorCount = stats ? stats.connectorCount : '…';
+    const created = new Date(t.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+    return `<tr class="clickable" onclick="selectTenant('${t.id}')">
+      <td><strong>${esc(t.name)}</strong></td>
+      <td><span class="badge badge-${t.type}">${t.type}</span></td>
+      <td><span class="badge badge-${t.status}">${t.status}</span></td>
+      <td><span class="badge badge-${t.plan}">${t.plan}</span></td>
+      <td>${connectorCount}</td>
+      <td>${created}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Detail View ──────────────────────────────────────────────────────────
+async function selectTenant(id) {
+  try {
+    selectedTenant = await api(`/api/tenants/${id}`);
+    const stats = tenantStats[id] || await api(`/api/tenants/${id}/stats`).catch(() => null);
+
+    document.getElementById('detailName').innerHTML =
+      `🏢 ${esc(selectedTenant.name)} <span class="badge badge-${selectedTenant.status}">${selectedTenant.status}</span>`;
+
+    const grid = document.getElementById('detailGrid');
+    grid.innerHTML = `
+      <div class="detail-field">
+        <div class="field-label">Type</div>
+        <div class="field-value"><span class="badge badge-${selectedTenant.type}">${selectedTenant.type}</span></div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Plan</div>
+        <div class="field-value"><span class="badge badge-${selectedTenant.plan}">${selectedTenant.plan}</span></div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Admin Contact</div>
+        <div class="field-value">${esc(selectedTenant.contacts?.admin || '—')}</div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Technical Contact</div>
+        <div class="field-value">${esc(selectedTenant.contacts?.technical || '—')}</div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Entra Tenant ID</div>
+        <div class="field-value" style="font-family:'Cascadia Code','Fira Code',monospace;font-size:12px">${esc(selectedTenant.entraAppRegistration?.tenantId || '—')}</div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Entra Client ID</div>
+        <div class="field-value" style="font-family:'Cascadia Code','Fira Code',monospace;font-size:12px">${esc(selectedTenant.entraAppRegistration?.clientId || '—')}</div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Max Connectors</div>
+        <div class="field-value">${selectedTenant.quotas?.maxConnectors ?? '—'}</div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Total Items Indexed</div>
+        <div class="field-value">${stats ? stats.totalItemsIndexed.toLocaleString() : '—'}</div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Active Uploads</div>
+        <div class="field-value">${stats ? stats.activeUploads : '—'}</div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Last Activity</div>
+        <div class="field-value">${stats ? timeAgo(stats.lastActivity) : '—'}</div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Created</div>
+        <div class="field-value">${new Date(selectedTenant.createdAt).toLocaleString()}</div>
+      </div>
+      <div class="detail-field">
+        <div class="field-label">Updated</div>
+        <div class="field-value">${new Date(selectedTenant.updatedAt).toLocaleString()}</div>
+      </div>
+    `;
+
+    // Offboard button visibility
+    const offBtn = document.getElementById('offboardBtn');
+    offBtn.style.display = selectedTenant.status === 'deactivated' ? 'none' : 'inline-flex';
+
+    // Load connectors
+    await loadTenantConnectors(id);
+
+    document.getElementById('detailPane').classList.add('active');
+    document.getElementById('detailPane').scrollIntoView({ behavior: 'smooth' });
+  } catch (err) {
+    showError(err.message);
+  }
+}
+
+async function loadTenantConnectors(tenantId) {
+  const container = document.getElementById('detailConnectors');
+  try {
+    const data = await api(`/api/tenants/${tenantId}/connectors`);
+    const connectors = data.items || [];
+
+    if (connectors.length === 0) {
+      container.innerHTML = '<div class="empty-state" style="padding:20px"><p>No connectors registered for this tenant.</p></div>';
+      return;
+    }
+
+    container.innerHTML = `<div class="table-container" style="margin:0"><table>
+      <thead><tr><th>Name</th><th>Connection ID</th><th>Status</th><th>Hosting</th><th>Items</th></tr></thead>
+      <tbody>${connectors.map(c => {
+        const items = (c.dataSources || []).reduce((sum, ds) => sum + (ds.itemCount || 0), 0);
+        return `<tr>
+          <td>${esc(c.displayName)}</td>
+          <td style="font-family:'Cascadia Code','Fira Code',monospace;font-size:12px">${esc(c.connectionId)}</td>
+          <td><span class="badge badge-${c.status}">${c.status}</span></td>
+          <td>${esc(c.hostingType)}</td>
+          <td>${items.toLocaleString()}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  } catch {
+    container.innerHTML = '<div class="empty-state" style="padding:20px"><p>Could not load connectors.</p></div>';
+  }
+}
+
+function closeDetail() {
+  document.getElementById('detailPane').classList.remove('active');
+  selectedTenant = null;
+}
+
+// ── Create Tenant ────────────────────────────────────────────────────────
+function openCreateModal() {
+  document.getElementById('createModal').classList.add('active');
+  document.getElementById('createFormContainer').style.display = 'block';
+  document.getElementById('wizardContainer').style.display = 'none';
+  resetForm();
+}
+
+function closeCreateModal() {
+  document.getElementById('createModal').classList.remove('active');
+  resetForm();
+  if (createdTenant) {
+    loadTenants();
+    createdTenant = null;
+  }
+}
+
+function resetForm() {
+  document.getElementById('fName').value = '';
+  document.getElementById('fType').value = 'customer';
+  document.getElementById('fPlan').value = 'free';
+  document.getElementById('fAdminEmail').value = '';
+  document.getElementById('fTechEmail').value = '';
+  document.getElementById('fTenantId').value = '';
+  document.getElementById('fClientId').value = '';
+  wizardStep = 0;
+}
+
+async function createTenant() {
+  const name = document.getElementById('fName').value.trim();
+  const type = document.getElementById('fType').value;
+  const plan = document.getElementById('fPlan').value;
+  const admin = document.getElementById('fAdminEmail').value.trim();
+  const technical = document.getElementById('fTechEmail').value.trim();
+  const tenantId = document.getElementById('fTenantId').value.trim();
+  const clientId = document.getElementById('fClientId').value.trim();
+
+  if (!name) { alert('Tenant name is required.'); return; }
+  if (!admin) { alert('Admin contact email is required.'); return; }
+  if (!technical) { alert('Technical contact email is required.'); return; }
+  if (!tenantId) { alert('Entra Tenant ID is required.'); return; }
+  if (!clientId) { alert('Entra Client ID is required.'); return; }
+
+  try {
+    createdTenant = await api('/api/tenants', {
+      method: 'POST',
+      body: JSON.stringify({
+        name, type, plan,
+        contacts: { admin, technical },
+        entraAppRegistration: { tenantId, clientId },
+      }),
+    });
+
+    // Populate wizard fields
+    document.getElementById('wTenantId').value = tenantId;
+    document.getElementById('wClientId').value = clientId;
+
+    // Switch to wizard
+    document.getElementById('createFormContainer').style.display = 'none';
+    document.getElementById('wizardContainer').style.display = 'block';
+    wizardStep = 0;
+    updateWizard();
+
+    showSuccess(`Tenant "${name}" created successfully! Follow the onboarding steps below.`);
+  } catch (err) {
+    showError(`Failed to create tenant: ${err.message}`);
+  }
+}
+
+// ── Wizard Navigation ────────────────────────────────────────────────────
+function updateWizard() {
+  document.querySelectorAll('.wizard-step').forEach((el, i) => {
+    el.classList.remove('active', 'done');
+    if (i === wizardStep) el.classList.add('active');
+    else if (i < wizardStep) el.classList.add('done');
+  });
+  document.querySelectorAll('.wizard-content .step').forEach((el, i) => {
+    el.classList.toggle('active', i === wizardStep);
+  });
+
+  const prevBtn = document.getElementById('wizPrev');
+  const nextBtn = document.getElementById('wizNext');
+  prevBtn.style.visibility = wizardStep === 0 ? 'hidden' : 'visible';
+
+  if (wizardStep === 4) {
+    nextBtn.style.display = 'none';
+    document.getElementById('wizardNav').style.display = 'none';
+  } else {
+    nextBtn.style.display = 'inline-flex';
+    document.getElementById('wizardNav').style.display = 'flex';
+  }
+}
+
+function wizardNext() {
+  if (wizardStep < 4) { wizardStep++; updateWizard(); }
+}
+function wizardPrev() {
+  if (wizardStep > 0) { wizardStep--; updateWizard(); }
+}
+function finishWizard() {
+  closeCreateModal();
+  if (createdTenant) {
+    selectTenant(createdTenant.id);
+  }
+}
+
+// ── Offboard ─────────────────────────────────────────────────────────────
+function confirmOffboard() {
+  if (!selectedTenant) return;
+  document.getElementById('confirmTenantName').textContent = selectedTenant.name;
+  document.getElementById('confirmOverlay').classList.add('active');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('active');
+}
+
+async function executeOffboard() {
+  if (!selectedTenant) return;
+  try {
+    const result = await api(`/api/tenants/${selectedTenant.id}/offboard`, { method: 'POST' });
+    closeConfirm();
+    showSuccess(
+      `Tenant "${selectedTenant.name}" deactivated. ` +
+      `${result.connectorsOfflined} connector(s) set offline. ` +
+      `Data retained until ${new Date(result.gracePeriod.endsAt).toLocaleDateString()}.`
+    );
+    closeDetail();
+    await loadTenants();
+  } catch (err) {
+    closeConfirm();
+    showError(`Offboarding failed: ${err.message}`);
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 8000);
+}
+
+function showSuccess(msg) {
+  const el = document.getElementById('successBanner');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 8000);
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────
+loadTenants();
+</script>
+</body>
+</html>

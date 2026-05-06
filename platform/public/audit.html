@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Log — Copilot Connector Platform</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;padding:24px}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;border-bottom:1px solid #21262d;padding-bottom:20px}
+.header h1{font-size:24px;font-weight:600;display:flex;align-items:center;gap:10px}
+.header h1 .icon{font-size:28px}
+.header .subtitle{color:#8b949e;font-size:14px;margin-top:4px}
+.header-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.auto-refresh{color:#8b949e;font-size:12px;display:flex;align-items:center;gap:6px}
+.auto-refresh .dot{width:8px;height:8px;border-radius:50%;background:#3fb950;display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.nav-links{display:flex;gap:12px;margin-top:4px}
+.nav-links a{font-size:13px;color:#8b949e;padding:4px 10px;border-radius:6px;border:1px solid #30363d;transition:all .15s}
+.nav-links a:hover{color:#e6edf3;border-color:#8b949e;text-decoration:none;background:#21262d}
+
+/* Filters */
+.filters{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.filters label{font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+.filter-group{display:flex;flex-direction:column;gap:4px}
+.filters select,.filters input{background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;padding:6px 10px;font-size:13px;font-family:inherit}
+.filters select:focus,.filters input:focus{outline:none;border-color:#58a6ff}
+.btn{padding:6px 14px;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#e6edf3;font-size:13px;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn:hover{background:#30363d;border-color:#8b949e}
+.btn-primary{background:#238636;border-color:#238636;color:#fff}
+.btn-primary:hover{background:#2ea043}
+
+/* Summary bar */
+.summary-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:16px 20px;text-align:center}
+.stat-card .stat-label{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#8b949e;font-weight:600;margin-bottom:6px}
+.stat-card .stat-value{font-size:24px;font-weight:700;color:#e6edf3}
+.stat-card .stat-value.green{color:#3fb950}
+.stat-card .stat-value.red{color:#f85149}
+.stat-card .stat-value.yellow{color:#d29922}
+.stat-card .stat-value.blue{color:#58a6ff}
+
+/* Table */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;padding:10px 12px;border-bottom:2px solid #21262d;color:#8b949e;font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.8px;white-space:nowrap}
+tbody td{padding:10px 12px;border-bottom:1px solid #161b22;vertical-align:top}
+tbody tr:hover{background:#161b22}
+
+/* Badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-success{background:rgba(63,185,80,.15);color:#3fb950}
+.badge-failure{background:rgba(248,81,73,.15);color:#f85149}
+.badge-denied{background:rgba(210,153,34,.15);color:#d29922}
+
+.mono{font-family:'Cascadia Code','Fira Code',monospace;font-size:12px;color:#8b949e}
+.ts{color:#8b949e;font-size:12px;white-space:nowrap}
+
+.empty{text-align:center;padding:60px 20px;color:#484f58;font-size:15px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1><span class="icon">📋</span> Audit Log</h1>
+    <div class="subtitle">Compliance audit trail for all platform actions</div>
+  </div>
+  <div class="header-right">
+    <div class="auto-refresh"><span class="dot"></span> Auto-refresh 30s</div>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/observatory.html">Observatory</a>
+      <a href="/alerts.html">Alerts</a>
+    </div>
+  </div>
+</div>
+
+<!-- Summary -->
+<div class="summary-bar">
+  <div class="stat-card">
+    <div class="stat-label">Total Entries</div>
+    <div class="stat-value blue" id="statTotal">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Success</div>
+    <div class="stat-value green" id="statSuccess">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Failure</div>
+    <div class="stat-value red" id="statFailure">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Denied</div>
+    <div class="stat-value yellow" id="statDenied">—</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+  <div class="filter-group">
+    <label>Action</label>
+    <select id="filterAction">
+      <option value="">All actions</option>
+      <option value="tenant.create">tenant.create</option>
+      <option value="tenant.update">tenant.update</option>
+      <option value="tenant.offboard">tenant.offboard</option>
+      <option value="connector.create">connector.create</option>
+      <option value="connector.update">connector.update</option>
+      <option value="connector.delete">connector.delete</option>
+      <option value="connector.provision">connector.provision</option>
+      <option value="connector.crawl">connector.crawl</option>
+      <option value="upload.create">upload.create</option>
+      <option value="upload.delete">upload.delete</option>
+      <option value="upload.ingest">upload.ingest</option>
+      <option value="schema.draft">schema.draft</option>
+      <option value="schema.validate">schema.validate</option>
+      <option value="schema.promote">schema.promote</option>
+      <option value="secret.store">secret.store</option>
+      <option value="secret.delete">secret.delete</option>
+      <option value="alert.acknowledge">alert.acknowledge</option>
+      <option value="alert.resolve">alert.resolve</option>
+      <option value="auth.login">auth.login</option>
+      <option value="auth.denied">auth.denied</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Tenant</label>
+    <select id="filterTenant">
+      <option value="">All tenants</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Since</label>
+    <input type="date" id="filterSince">
+  </div>
+  <div class="filter-group" style="justify-content:flex-end">
+    <label>&nbsp;</label>
+    <button class="btn" onclick="loadAuditLog()">Apply</button>
+  </div>
+  <div class="filter-group" style="justify-content:flex-end">
+    <label>&nbsp;</label>
+    <button class="btn btn-primary" onclick="exportCsv()">⬇ Export CSV</button>
+  </div>
+</div>
+
+<!-- Audit table -->
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>User</th>
+        <th>Action</th>
+        <th>Resource</th>
+        <th>Result</th>
+        <th>Tenant</th>
+        <th>IP</th>
+      </tr>
+    </thead>
+    <tbody id="auditBody">
+      <tr><td colspan="7" class="empty">Loading…</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+let currentEntries = [];
+
+function resultBadge(result) {
+  const cls = result === 'success' ? 'badge-success' : result === 'failure' ? 'badge-failure' : 'badge-denied';
+  return `<span class="badge ${cls}">${result}</span>`;
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleString();
+}
+
+function renderEntries(entries) {
+  const tbody = document.getElementById('auditBody');
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">No audit entries found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = entries.map(e => `
+    <tr>
+      <td class="ts">${fmtTime(e.timestamp)}</td>
+      <td>${esc(e.userName)}</td>
+      <td><code>${esc(e.action)}</code></td>
+      <td>${esc(e.resource)}${e.resourceId ? ' <span class="mono">' + esc(e.resourceId.substring(0,8)) + '…</span>' : ''}</td>
+      <td>${resultBadge(e.result)}</td>
+      <td class="mono">${esc((e.tenantId || '').substring(0,8))}…</td>
+      <td class="mono">${esc(e.ipAddress)}</td>
+    </tr>
+  `).join('');
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function updateStats(entries) {
+  document.getElementById('statTotal').textContent = entries.length;
+  document.getElementById('statSuccess').textContent = entries.filter(e => e.result === 'success').length;
+  document.getElementById('statFailure').textContent = entries.filter(e => e.result === 'failure').length;
+  document.getElementById('statDenied').textContent = entries.filter(e => e.result === 'denied').length;
+}
+
+function populateTenantDropdown(entries) {
+  const sel = document.getElementById('filterTenant');
+  const tenants = [...new Set(entries.map(e => e.tenantId).filter(Boolean))];
+  // Keep only the "All tenants" option and add discovered ones
+  const current = sel.value;
+  sel.innerHTML = '<option value="">All tenants</option>';
+  for (const t of tenants) {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t.length > 16 ? t.substring(0,16) + '…' : t;
+    sel.appendChild(opt);
+  }
+  sel.value = current;
+}
+
+async function loadAuditLog() {
+  try {
+    const params = new URLSearchParams();
+    const action = document.getElementById('filterAction').value;
+    const tenant = document.getElementById('filterTenant').value;
+    const since = document.getElementById('filterSince').value;
+
+    if (action) params.set('action', action);
+    if (tenant) params.set('tenantId', tenant);
+    if (since) params.set('since', since);
+
+    const url = '/api/observatory/audit' + (params.toString() ? '?' + params : '');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to load audit log');
+    const data = await res.json();
+    currentEntries = data.entries || [];
+    renderEntries(currentEntries);
+    updateStats(currentEntries);
+    populateTenantDropdown(currentEntries);
+  } catch (e) {
+    document.getElementById('auditBody').innerHTML =
+      '<tr><td colspan="7" class="empty">Failed to load audit log. Is the API running?</td></tr>';
+  }
+}
+
+function exportCsv() {
+  if (!currentEntries.length) return;
+  const headers = ['timestamp','userId','userName','action','resource','resourceId','result','tenantId','ipAddress'];
+  const rows = currentEntries.map(e => headers.map(h => '"' + String(e[h] || '').replace(/"/g,'""') + '"').join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'audit-log-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// Initial load + auto-refresh every 30s
+loadAuditLog();
+setInterval(loadAuditLog, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Observatory — Copilot Connector Platform</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;padding:24px}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;border-bottom:1px solid #21262d;padding-bottom:20px}
+.header h1{font-size:24px;font-weight:600;display:flex;align-items:center;gap:10px}
+.header h1 .icon{font-size:28px}
+.header .subtitle{color:#8b949e;font-size:14px;margin-top:4px}
+.header-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.auto-refresh{color:#8b949e;font-size:12px;display:flex;align-items:center;gap:6px}
+.auto-refresh .dot{width:8px;height:8px;border-radius:50%;background:#3fb950;display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.btn{padding:8px 18px;border-radius:6px;border:1px solid #30363d;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-outline{background:transparent;color:#e6edf3;border-color:#30363d}
+.btn-outline:hover{background:#21262d;border-color:#8b949e}
+
+/* Summary bar */
+.summary-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
+.stat-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:20px 24px;text-align:center}
+.stat-card .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#8b949e;font-weight:600;margin-bottom:8px}
+.stat-card .stat-value{font-size:32px;font-weight:700;color:#e6edf3}
+.stat-card .stat-value.green{color:#3fb950}
+.stat-card .stat-value.red{color:#f85149}
+.stat-card .stat-value.yellow{color:#d29922}
+.stat-card .stat-value.blue{color:#58a6ff}
+
+/* Connector grid */
+.section-title{font-size:16px;font-weight:600;margin-bottom:16px;color:#e6edf3;display:flex;align-items:center;gap:8px}
+.connector-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;margin-bottom:32px}
+.connector-card{background:#161b22;border:1px solid #21262d;border-radius:10px;padding:24px;transition:border-color .15s}
+.connector-card:hover{border-color:#30363d}
+.connector-card .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.connector-card .card-name{font-size:18px;font-weight:600;color:#e6edf3;margin-bottom:4px}
+.connector-card .card-tenant{font-size:12px;color:#8b949e}
+.badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:lowercase;white-space:nowrap}
+.badge-online{background:#1a3a2a;color:#3fb950}
+.badge-offline{background:#3d1a1a;color:#f85149}
+.badge-provisioning{background:#1a2d4a;color:#58a6ff}
+.badge-error{background:#3d2e0a;color:#d29922}
+.badge-hosting{background:#1a2d4a;color:#58a6ff;font-size:10px;text-transform:none}
+.card-stats{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.card-stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #21262d}
+.card-stat-row:last-child{border-bottom:none}
+.card-stat-row .label{color:#8b949e;font-size:13px}
+.card-stat-row .value{font-size:13px;font-weight:500;color:#e6edf3;font-family:'Cascadia Code','Fira Code',monospace}
+.card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid #21262d}
+.health-dots{display:flex;gap:6px;align-items:center}
+.health-dot{width:10px;height:10px;border-radius:50%;border:1px solid #30363d}
+.health-dot.healthy{background:#3fb950;border-color:#3fb950}
+.health-dot.degraded{background:#d29922;border-color:#d29922}
+.health-dot.unhealthy{background:#f85149;border-color:#f85149}
+.health-dot.unknown{background:#484f58;border-color:#484f58}
+.health-dot-label{font-size:10px;color:#8b949e;margin-left:-2px}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:5px}
+.btn-dashboard{background:#1f6feb;color:#fff;border-color:#1f6feb}
+.btn-dashboard:hover{background:#388bfd}
+.btn-disabled{background:transparent;color:#484f58;border-color:#21262d;cursor:default}
+.btn-disabled:hover{background:transparent}
+
+/* Loading & error states */
+.loading{text-align:center;padding:60px 0;color:#8b949e;font-size:14px}
+.loading .spinner{display:inline-block;width:24px;height:24px;border:3px solid #21262d;border-top-color:#58a6ff;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-banner{background:#3d1a1a;border:1px solid #f85149;border-radius:8px;padding:16px 20px;margin-bottom:20px;color:#f85149;font-size:14px;display:none}
+
+/* Nav breadcrumb */
+.nav-bar{margin-bottom:24px;display:flex;gap:8px;align-items:center;font-size:13px;color:#8b949e}
+.nav-bar a{color:#58a6ff}
+
+/* Responsive */
+@media(max-width:768px){
+  .header{flex-direction:column;gap:16px}
+  .header-right{align-items:flex-start}
+  .summary-bar{grid-template-columns:repeat(2,1fr)}
+  .connector-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <a href="/">Platform</a>
+  <span>/</span>
+  <span>Observatory</span>
+</div>
+
+<div class="header">
+  <div>
+    <h1><span class="icon">🔭</span> Copilot Connector Platform</h1>
+    <div class="subtitle">Observatory — All Connectors</div>
+  </div>
+  <div class="header-right">
+    <span class="auto-refresh"><span class="dot"></span> Auto-refresh: <span id="countdown">15</span>s</span>
+    <button class="btn btn-outline" onclick="refreshNow()">↻ Refresh Now</button>
+  </div>
+</div>
+
+<div class="error-banner" id="errorBanner"></div>
+
+<!-- Summary Bar -->
+<div class="summary-bar">
+  <div class="stat-card">
+    <div class="stat-label">Total Connectors</div>
+    <div class="stat-value blue" id="statTotal">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Online</div>
+    <div class="stat-value green" id="statOnline">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Offline</div>
+    <div class="stat-value red" id="statOffline">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Errors</div>
+    <div class="stat-value yellow" id="statErrors">—</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Items Indexed</div>
+    <div class="stat-value" id="statItems">—</div>
+  </div>
+</div>
+
+<!-- Connector Grid -->
+<div class="section-title">🔌 Connectors</div>
+<div id="connectorGrid" class="connector-grid">
+  <div class="loading"><div class="spinner"></div><br>Loading connectors…</div>
+</div>
+
+<script>
+const REFRESH_INTERVAL = 15;
+let countdownValue = REFRESH_INTERVAL;
+let countdownTimer = null;
+let refreshTimer = null;
+
+// ── Helpers ──
+function formatTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString();
+}
+
+function relativeTime(iso) {
+  if (!iso) return 'Never';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return 'Never';
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return 'Just now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  return Math.floor(diff / 86400000) + 'd ago';
+}
+
+function statusBadgeClass(status) {
+  const map = { online: 'badge-online', offline: 'badge-offline', provisioning: 'badge-provisioning', error: 'badge-error' };
+  return map[status] || 'badge-offline';
+}
+
+function hostingLabel(type) {
+  const map = { 'azure-functions': 'Azure Functions', 'container-apps': 'Container Apps' };
+  return map[type] || type || 'Unknown';
+}
+
+function healthDotClass(status) {
+  return 'health-dot ' + (status || 'unknown');
+}
+
+function itemCount(connector) {
+  if (!connector.dataSources || !Array.isArray(connector.dataSources)) return 0;
+  return connector.dataSources.reduce((sum, ds) => sum + (ds.itemCount || 0), 0);
+}
+
+function dashboardUrl(connector) {
+  const ep = connector.endpoints;
+  if (!ep) return null;
+  return ep.dashboard || null;
+}
+
+// ── Card Rendering ──
+function renderCard(c) {
+  const items = itemCount(c);
+  const health = c.health || { runtime: 'unknown', ingestion: 'unknown', search: 'unknown' };
+  const tenantLabel = c.tenantId === 'ngo-internal' ? 'Internal (NGO)' : (c.tenantId || 'Unknown');
+  const dashUrl = dashboardUrl(c);
+  const dashBtn = dashUrl
+    ? `<a href="${dashUrl}" target="_blank" class="btn btn-sm btn-dashboard" title="Open Dashboard">📊 Dashboard</a>`
+    : `<span class="btn btn-sm btn-disabled" title="No dashboard endpoint">No Dashboard</span>`;
+
+  return `
+    <div class="connector-card">
+      <div class="card-header">
+        <div>
+          <div class="card-name">${c.displayName || c.connectionId}</div>
+          <div class="card-tenant">${tenantLabel}</div>
+        </div>
+        <div class="badges">
+          <span class="badge ${statusBadgeClass(c.status)}">${c.status || 'offline'}</span>
+          <span class="badge badge-hosting">${hostingLabel(c.hostingType)}</span>
+        </div>
+      </div>
+      <div class="card-stats">
+        <div class="card-stat-row"><span class="label">Items Indexed</span><span class="value">${items.toLocaleString()}</span></div>
+        <div class="card-stat-row"><span class="label">Last Crawl</span><span class="value">${relativeTime(c.lastCrawl || (c.dataSources && c.dataSources[0] && c.dataSources[0].lastSync))}</span></div>
+        <div class="card-stat-row"><span class="label">Last Heartbeat</span><span class="value">${relativeTime(c.lastHeartbeat)}</span></div>
+        <div class="card-stat-row"><span class="label">Connection ID</span><span class="value">${c.connectionId || '—'}</span></div>
+      </div>
+      <div class="card-footer">
+        <div class="health-dots" title="Runtime / Ingestion / Search">
+          <span class="${healthDotClass(health.runtime)}" title="Runtime: ${health.runtime}"></span>
+          <span class="${healthDotClass(health.ingestion)}" title="Ingestion: ${health.ingestion}"></span>
+          <span class="${healthDotClass(health.search)}" title="Search: ${health.search}"></span>
+          <span class="health-dot-label">R / I / S</span>
+        </div>
+        ${dashBtn}
+      </div>
+    </div>`;
+}
+
+// ── Data Fetching ──
+async function fetchData() {
+  const errorBanner = document.getElementById('errorBanner');
+  try {
+    const res = await fetch('/api/observatory/connectors');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const allConnectors = [
+      ...(data.registered ? data.registered.items : []),
+      ...(data.discovered ? data.discovered.items : []),
+    ];
+
+    // Summary stats
+    let online = 0, offline = 0, errors = 0, totalItems = 0;
+    for (const c of allConnectors) {
+      if (c.status === 'online') online++;
+      else if (c.status === 'error') errors++;
+      else offline++;
+      totalItems += itemCount(c);
+    }
+
+    document.getElementById('statTotal').textContent = allConnectors.length;
+    document.getElementById('statOnline').textContent = online;
+    document.getElementById('statOffline').textContent = offline;
+    document.getElementById('statErrors').textContent = errors;
+    document.getElementById('statItems').textContent = totalItems.toLocaleString();
+
+    // Render grid
+    const grid = document.getElementById('connectorGrid');
+    if (allConnectors.length === 0) {
+      grid.innerHTML = '<div class="loading" style="color:#8b949e">No connectors found. Register a tenant and add connectors, or add ngo-* connector directories.</div>';
+    } else {
+      grid.innerHTML = allConnectors.map(renderCard).join('');
+    }
+
+    errorBanner.style.display = 'none';
+  } catch (err) {
+    errorBanner.textContent = 'Failed to load connector data: ' + err.message;
+    errorBanner.style.display = 'block';
+  }
+}
+
+// ── Refresh Logic ──
+function startCountdown() {
+  countdownValue = REFRESH_INTERVAL;
+  document.getElementById('countdown').textContent = countdownValue;
+  if (countdownTimer) clearInterval(countdownTimer);
+  if (refreshTimer) clearTimeout(refreshTimer);
+
+  countdownTimer = setInterval(() => {
+    countdownValue--;
+    document.getElementById('countdown').textContent = countdownValue;
+    if (countdownValue <= 0) {
+      clearInterval(countdownTimer);
+    }
+  }, 1000);
+
+  refreshTimer = setTimeout(() => {
+    fetchData();
+    startCountdown();
+  }, REFRESH_INTERVAL * 1000);
+}
+
+function refreshNow() {
+  fetchData();
+  startCountdown();
+}
+
+// ── Init ──
+fetchData();
+startCountdown();
+</script>
+</body>
+</html>

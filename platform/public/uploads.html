@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uploads — Copilot Connector Platform</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;padding:24px}
+a{color:#58a6ff;text-decoration:none}
+a:hover{text-decoration:underline}
+
+.nav-bar{margin-bottom:24px;display:flex;gap:8px;align-items:center;font-size:13px;color:#8b949e}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;border-bottom:1px solid #21262d;padding-bottom:20px}
+.header h1{font-size:24px;font-weight:600;display:flex;align-items:center;gap:10px}
+.header h1 .icon{font-size:28px}
+.header .subtitle{color:#8b949e;font-size:14px;margin-top:4px}
+
+/* Selector */
+.selector{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.selector select{background:#161b22;border:1px solid #30363d;color:#e6edf3;padding:8px 12px;border-radius:6px;font-size:14px}
+
+/* Drop zone */
+.drop-zone{border:2px dashed #30363d;border-radius:12px;padding:48px 24px;text-align:center;margin-bottom:32px;transition:border-color .2s,background .2s;cursor:pointer}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#58a6ff;background:rgba(88,166,255,.06)}
+.drop-zone .dz-icon{font-size:40px;margin-bottom:12px;display:block}
+.drop-zone .dz-title{font-size:16px;font-weight:600;margin-bottom:4px}
+.drop-zone .dz-sub{color:#8b949e;font-size:13px}
+.drop-zone input[type=file]{display:none}
+
+/* Format selector inside drop zone */
+.format-row{display:flex;gap:12px;justify-content:center;margin-top:16px;align-items:center}
+.format-row label{font-size:13px;color:#8b949e}
+.format-row select{background:#0d1117;border:1px solid #30363d;color:#e6edf3;padding:4px 8px;border-radius:4px;font-size:13px}
+
+/* Table */
+table{width:100%;border-collapse:collapse;margin-bottom:24px}
+th,td{padding:12px 16px;text-align:left;border-bottom:1px solid #21262d;font-size:13px}
+th{color:#8b949e;font-weight:600;text-transform:uppercase;letter-spacing:.8px;font-size:11px}
+tr:hover{background:#161b22}
+
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.badge.scanning,.badge.validating,.badge.ingesting{background:rgba(88,166,255,.15);color:#58a6ff}
+.badge.staged,.badge.ingested{background:rgba(63,185,80,.15);color:#3fb950}
+.badge.quarantined{background:rgba(248,81,73,.15);color:#f85149}
+.badge.purged{background:rgba(139,148,158,.15);color:#8b949e}
+
+.btn{padding:6px 14px;border-radius:6px;border:1px solid #30363d;background:#21262d;color:#e6edf3;font-size:12px;cursor:pointer;font-weight:500;transition:background .15s}
+.btn:hover{background:#30363d}
+.btn-primary{background:#238636;border-color:#2ea043;color:#fff}
+.btn-primary:hover{background:#2ea043}
+.btn-danger{background:#da3633;border-color:#f85149;color:#fff}
+.btn-danger:hover{background:#f85149}
+
+.empty{text-align:center;padding:48px 24px;color:#8b949e}
+.empty .empty-icon{font-size:40px;margin-bottom:12px;display:block}
+
+.toast{position:fixed;bottom:24px;right:24px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px 20px;font-size:13px;color:#e6edf3;opacity:0;transition:opacity .3s;z-index:100}
+.toast.show{opacity:1}
+.toast.error{border-color:#f85149}
+.toast.success{border-color:#3fb950}
+</style>
+</head>
+<body>
+
+<div class="nav-bar">
+  <a href="/">Platform</a> <span>›</span> <span>Uploads</span>
+</div>
+
+<div class="header">
+  <div>
+    <h1><span class="icon">📤</span> Upload Management</h1>
+    <div class="subtitle">Upload CSV or JSON data for connector ingestion</div>
+  </div>
+</div>
+
+<!-- Tenant / Connector Selector -->
+<div class="selector">
+  <select id="tenantSelect"><option value="">Select Tenant…</option></select>
+  <select id="connectorSelect" disabled><option value="">Select Connector…</option></select>
+</div>
+
+<!-- Drop Zone -->
+<div class="drop-zone" id="dropZone">
+  <span class="dz-icon">📁</span>
+  <div class="dz-title">Drag &amp; drop a file here, or click to browse</div>
+  <div class="dz-sub">Supports CSV, JSON, and JSONL files (max 50 MB)</div>
+  <input type="file" id="fileInput" accept=".csv,.json,.jsonl">
+  <div class="format-row">
+    <label>Format:</label>
+    <select id="formatSelect">
+      <option value="csv">CSV</option>
+      <option value="json">JSON</option>
+      <option value="jsonl">JSONL</option>
+    </select>
+  </div>
+</div>
+
+<!-- Upload History -->
+<h2 style="font-size:18px;font-weight:600;margin-bottom:16px">Upload History</h2>
+<table id="uploadsTable">
+  <thead>
+    <tr>
+      <th>File Name</th>
+      <th>Format</th>
+      <th>Size</th>
+      <th>Records</th>
+      <th>Status</th>
+      <th>Uploaded</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="uploadsBody">
+    <tr><td colspan="7" class="empty"><span class="empty-icon">📭</span>Select a tenant and connector to view uploads</td></tr>
+  </tbody>
+</table>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let currentTenant = '';
+let currentConnector = '';
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function formatSize(mb) {
+  if (mb < 1) return (mb * 1024).toFixed(0) + ' KB';
+  return mb.toFixed(1) + ' MB';
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadTenants() {
+  try {
+    const res = await fetch(API + '/api/tenants');
+    const data = await res.json();
+    const sel = document.getElementById('tenantSelect');
+    sel.innerHTML = '<option value="">Select Tenant…</option>';
+    for (const t of (data.items || [])) {
+      const opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.name + ' (' + t.id.slice(0,8) + ')';
+      sel.appendChild(opt);
+    }
+  } catch (e) { showToast('Failed to load tenants', 'error'); }
+}
+
+async function loadConnectors(tenantId) {
+  const sel = document.getElementById('connectorSelect');
+  sel.innerHTML = '<option value="">Select Connector…</option>';
+  sel.disabled = true;
+  if (!tenantId) return;
+  try {
+    const res = await fetch(API + '/api/tenants/' + tenantId + '/connectors');
+    const data = await res.json();
+    for (const c of (data.items || [])) {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.displayName + ' (' + c.connectionId + ')';
+      sel.appendChild(opt);
+    }
+    sel.disabled = false;
+  } catch (e) { showToast('Failed to load connectors', 'error'); }
+}
+
+async function loadUploads() {
+  const tbody = document.getElementById('uploadsBody');
+  if (!currentTenant || !currentConnector) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty"><span class="empty-icon">📭</span>Select a tenant and connector to view uploads</td></tr>';
+    return;
+  }
+  try {
+    const res = await fetch(API + '/api/tenants/' + currentTenant + '/connectors/' + currentConnector + '/uploads');
+    const data = await res.json();
+    const items = data.items || [];
+    if (items.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty"><span class="empty-icon">📭</span>No uploads yet — drop a file above to get started</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map(u => `
+      <tr>
+        <td>${esc(u.fileName)}</td>
+        <td>${u.format.toUpperCase()}</td>
+        <td>${formatSize(u.sizeMB)}</td>
+        <td>${u.recordCount.toLocaleString()}</td>
+        <td><span class="badge ${u.status}">${u.status}</span></td>
+        <td>${formatDate(u.uploadedAt)}</td>
+        <td>
+          ${u.status === 'staged' ? `<button class="btn btn-primary" onclick="ingestUpload('${u.id}')">Ingest</button> ` : ''}
+          <button class="btn btn-danger" onclick="deleteUpload('${u.id}')">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) { showToast('Failed to load uploads', 'error'); }
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function uploadFile(file) {
+  if (!currentTenant || !currentConnector) {
+    showToast('Select a tenant and connector first', 'error');
+    return;
+  }
+  const format = document.getElementById('formatSelect').value;
+  const reader = new FileReader();
+  reader.onload = async function() {
+    try {
+      const res = await fetch(
+        API + '/api/tenants/' + currentTenant + '/connectors/' + currentConnector + '/upload',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: file.name, format, data: reader.result })
+        }
+      );
+      const result = await res.json();
+      if (res.ok || res.status === 422) {
+        const status = result.upload ? result.upload.status : 'unknown';
+        showToast('Upload ' + status, status === 'quarantined' ? 'error' : 'success');
+        loadUploads();
+      } else {
+        showToast(result.error || 'Upload failed', 'error');
+      }
+    } catch (e) { showToast('Upload failed: ' + e.message, 'error'); }
+  };
+  reader.readAsText(file);
+}
+
+async function ingestUpload(uid) {
+  try {
+    const res = await fetch(
+      API + '/api/tenants/' + currentTenant + '/connectors/' + currentConnector + '/uploads/' + uid + '/ingest',
+      { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+    );
+    if (res.ok) {
+      showToast('Ingestion started');
+      loadUploads();
+    } else {
+      const data = await res.json();
+      showToast(data.error || 'Ingest failed', 'error');
+    }
+  } catch (e) { showToast('Ingest failed', 'error'); }
+}
+
+async function deleteUpload(uid) {
+  if (!confirm('Delete this upload?')) return;
+  try {
+    const res = await fetch(
+      API + '/api/tenants/' + currentTenant + '/connectors/' + currentConnector + '/uploads/' + uid,
+      { method: 'DELETE' }
+    );
+    if (res.ok) {
+      showToast('Upload deleted');
+      loadUploads();
+    } else {
+      showToast('Delete failed', 'error');
+    }
+  } catch (e) { showToast('Delete failed', 'error'); }
+}
+
+// Event listeners
+document.getElementById('tenantSelect').addEventListener('change', function() {
+  currentTenant = this.value;
+  currentConnector = '';
+  loadConnectors(currentTenant);
+  loadUploads();
+});
+
+document.getElementById('connectorSelect').addEventListener('change', function() {
+  currentConnector = this.value;
+  loadUploads();
+});
+
+// Drag & drop
+const dz = document.getElementById('dropZone');
+dz.addEventListener('click', () => document.getElementById('fileInput').click());
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  if (e.dataTransfer.files.length > 0) {
+    const file = e.dataTransfer.files[0];
+    // Auto-detect format from extension
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (['csv','json','jsonl'].includes(ext)) {
+      document.getElementById('formatSelect').value = ext;
+    }
+    uploadFile(file);
+  }
+});
+document.getElementById('fileInput').addEventListener('change', function() {
+  if (this.files.length > 0) {
+    const file = this.files[0];
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (['csv','json','jsonl'].includes(ext)) {
+      document.getElementById('formatSelect').value = ext;
+    }
+    uploadFile(file);
+    this.value = '';
+  }
+});
+
+loadTenants();
+</script>
+</body>
+</html>

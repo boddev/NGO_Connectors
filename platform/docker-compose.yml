@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  platform:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - AUTH_BYPASS=true
+      - NGO_CONNECTORS_PATH=/connectors
+    volumes:
+      - ./data:/app/data
+      - ../:/connectors:ro
