@@ -11,6 +11,7 @@
  * replicate via `setup/sync-platform-client.ps1`.
  */
 import { connectionId, connectionName } from "../config/connection.js";
+import { loadCrawlStateWithFallback } from "../state/crawlState.js";
 
 export interface HeartbeatDataSource {
   name: string;
@@ -33,6 +34,30 @@ const PACKAGE_VERSION =
   process.env.npm_package_version || "1.0.0";
 
 /**
+ * Read the connector's current crawl state and project it into the
+ * platform's `dataSources` heartbeat shape.
+ *
+ * Falls back to a single placeholder entry when state is unavailable so
+ * heartbeats keep flowing during cold starts / state read failures.
+ */
+async function readDataSources(): Promise<HeartbeatDataSource[]> {
+  try {
+    const state = await loadCrawlStateWithFallback();
+    const entries = Object.entries(state.sources || {});
+    if (entries.length === 0) {
+      return [{ name: connectionName, enabled: true, itemCount: 0 }];
+    }
+    return entries.map(([name, info]) => ({
+      name,
+      enabled: !!info.enabled,
+      itemCount: typeof info.itemCount === "number" ? info.itemCount : 0,
+    }));
+  } catch {
+    return [{ name: connectionName, enabled: true, itemCount: 0 }];
+  }
+}
+
+/**
  * Build a heartbeat config from environment + connector identity.
  *
  * Required env vars:
@@ -47,7 +72,7 @@ const PACKAGE_VERSION =
  *
  * Returns null when PLATFORM_URL is unset (heartbeats become a no-op).
  */
-export function buildHeartbeatConfig(): HeartbeatConfig | null {
+export async function buildHeartbeatConfig(): Promise<HeartbeatConfig | null> {
   const platformUrl = process.env.PLATFORM_URL || "";
   if (!platformUrl) return null;
 
@@ -76,6 +101,8 @@ export function buildHeartbeatConfig(): HeartbeatConfig | null {
       }
     : {};
 
+  const dataSources = await readDataSources();
+
   return {
     platformUrl,
     platformTenantId,
@@ -84,9 +111,7 @@ export function buildHeartbeatConfig(): HeartbeatConfig | null {
     hostingType,
     endpoints,
     version: PACKAGE_VERSION,
-    dataSources: [
-      { name: connectionName, enabled: true, itemCount: 0 },
-    ],
+    dataSources,
   };
 }
 
@@ -133,7 +158,7 @@ export async function sendHeartbeat(config: HeartbeatConfig): Promise<void> {
  * Heartbeat failures must never affect the connector's primary functions.
  */
 export async function trySendHeartbeat(): Promise<void> {
-  const config = buildHeartbeatConfig();
+  const config = await buildHeartbeatConfig();
   if (!config) {
     console.warn(
       "[heartbeat] PLATFORM_URL not set — skipping heartbeat (connector is not registered with a platform)"
@@ -142,7 +167,10 @@ export async function trySendHeartbeat(): Promise<void> {
   }
   try {
     await sendHeartbeat(config);
-    console.log(`[heartbeat] Sent for ${config.connectorId} → ${config.platformUrl}`);
+    const total = config.dataSources.reduce((s, d) => s + d.itemCount, 0);
+    console.log(
+      `[heartbeat] Sent for ${config.connectorId} → ${config.platformUrl} (${config.dataSources.length} sources, ${total} items)`
+    );
   } catch (err) {
     console.error(
       `[heartbeat] Failed for ${config.connectorId}:`,
