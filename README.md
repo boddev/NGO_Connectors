@@ -181,6 +181,21 @@ See [`platform/README.md`](platform/README.md) for full API docs.
 
 ---
 
+## Managing connectors from the web dashboard
+
+The hosting platform includes browser-based dashboards for operating connectors without calling APIs directly. Start the platform and open the Observatory to review connector health, item counts, last crawl status, tenant ownership, and quick links to each connector dashboard.
+
+| Dashboard | Relative URL | Purpose |
+|---|---|---|
+| Platform Observatory | `/observatory.html` | Cross-tenant view of all registered and discovered connectors, including runtime / ingestion / search health. |
+| Specific connector dashboard | `/api/dashboard` | Per-connector control surface for crawl status, crawl schedule, manual crawl/provision actions, and source enablement. |
+
+![Platform Observatory dashboard](docs/assets/platform-observatory.png)
+
+![Specific connector dashboard](docs/assets/specific-connector-dashboard.png)
+
+---
+
 ## Data download and evaluation tooling
 
 Three root-level scripts mirror, normalize, and evaluate every connector's data without touching Azure or Microsoft Graph. This is the workflow used to validate connector behavior and to generate Copilot eval sets.
